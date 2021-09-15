@@ -1,4 +1,4 @@
-import { Box, Flex } from '../../src'
+import { AutomaticBox, Box, Flex } from '../../src'
 import React, { Suspense } from 'react'
 import { ComponentMeta, ComponentStory } from '@storybook/react'
 import { Box as Cube } from '@react-three/drei'
@@ -9,26 +9,28 @@ import { Setup } from '../Setup'
 const Block = ({ color1, color2 }: { color1: Color; color2: Color }) => {
   return (
     <Box alignItems="flex-start" marginLeft={20} flexDirection="row">
-      <Box centerAnchor>
+      <AutomaticBox centerAnchor>
         <Cube args={[100, 100, 1]}>
-          <meshBasicMaterial color={color1} />
+          <meshBasicMaterial toneMapped={false} color={color1} />
         </Cube>
-      </Box>
-      <Box centerAnchor>
+      </AutomaticBox>
+      <AutomaticBox centerAnchor>
         <Cube args={[100, 100, 1]}>
-          <meshBasicMaterial color={color2} />
+          <meshBasicMaterial toneMapped={false} color={color2} />
         </Cube>
-      </Box>
+      </AutomaticBox>
     </Box>
   )
 }
 
 const NestedBoxes = ({ width, height }: { width: number; height: number }) => {
   return (
-    <Flex flexDirection="row" position={[-200, 50, -200]}>
-      <Block color1="red" color2="green" />
-      <Block color1="yellow" color2="white" />
-    </Flex>
+    <group position={[-200, 50, -200]}>
+      <Flex flexDirection="row">
+        <Block color1="red" color2="green" />
+        <Block color1="yellow" color2="white" />
+      </Flex>
+    </group>
   )
 }
 

@@ -102,6 +102,7 @@
     "prettier": "^2.0.5",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "@react-spring/three": "^9.2.4",
     "rimraf": "^3.0.2",
     "rollup": "^2.26.10",
     "rollup-plugin-filesize": "^9.1.1",
@@ -113,6 +114,7 @@
   "peerDependencies": {
     "@react-three/fiber": ">=6.0",
     "react": "^17.0.2",
+    "@react-spring/three": "^9.2.4",
     "three": ">=0.126"
   }
 }

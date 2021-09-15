@@ -1,22 +1,34 @@
 import { createContext } from 'react'
-import { YogaNode } from 'yoga-layout-prebuilt'
 import { Group } from 'three'
-import { R3FlexProps } from './props'
+import { YogaNode } from 'yoga-layout-prebuilt'
+import { FlexPlane, R3FlexProps } from './props'
 
 export interface SharedFlexContext {
   scaleFactor: number
+  plane: FlexPlane
   requestReflow(): void
-  registerBox(node: YogaNode, group: Group, flexProps: R3FlexProps, centerAnchor?: boolean): void
+  registerBox(node: YogaNode, parent: YogaNode): void
+  updateBox(
+    node: YogaNode,
+    index: number | undefined,
+    onUpdateTransformation: (x: number, y: number, width: number, height: number) => void,
+    centerAnchor?: boolean
+  ): void
   unregisterBox(node: YogaNode): void
   notInitialized?: boolean
 }
 
 const initialSharedFlexContext: SharedFlexContext = {
+  plane: 'xy',
   scaleFactor: 100,
   requestReflow() {
     console.warn('Flex not initialized! Please report')
   },
   registerBox() {
+    console.warn('Flex not initialized! Please report')
+    return 0
+  },
+  updateBox() {
     console.warn('Flex not initialized! Please report')
   },
   unregisterBox() {
@@ -27,17 +39,6 @@ const initialSharedFlexContext: SharedFlexContext = {
 
 export const flexContext = createContext<SharedFlexContext>(initialSharedFlexContext)
 
-export interface SharedBoxContext {
-  node: YogaNode | null
-  size: [number, number]
-  centerAnchor?: boolean
-  notInitialized?: boolean
-}
+export const boxNodeContext = createContext<YogaNode | null>(null)
 
-const initialSharedBoxContext: SharedBoxContext = {
-  node: null,
-  size: [0, 0],
-  notInitialized: true,
-}
-
-export const boxContext = createContext<SharedBoxContext>(initialSharedBoxContext)
+export const referenceGroupContext = createContext<Group | null>(null as any)

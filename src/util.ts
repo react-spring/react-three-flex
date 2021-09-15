@@ -34,6 +34,10 @@ export const setYogaProperties = (node: YogaNode, props: R3FlexProps, scaleFacto
         case 'basis':
         case 'flexBasis':
           return node.setFlexBasis(value)
+        case 'width':
+          return node.setWidth(value)
+        case 'height':
+          return node.setHeight(value)
 
         default:
           return (node[`set${capitalize(name)}` as keyof YogaNode] as any)(value)
@@ -44,6 +48,10 @@ export const setYogaProperties = (node: YogaNode, props: R3FlexProps, scaleFacto
         case 'basis':
         case 'flexBasis':
           return node.setFlexBasis(scaledValue)
+        case 'width':
+          return node.setWidth(scaledValue)
+        case 'height':
+          return node.setHeight(scaledValue)
         case 'grow':
         case 'flexGrow':
           return node.setFlexGrow(scaledValue)
@@ -90,18 +98,30 @@ export const setYogaProperties = (node: YogaNode, props: R3FlexProps, scaleFacto
         case 'marginBottom':
         case 'mb':
           return node.setMargin(Yoga.EDGE_BOTTOM, scaledValue)
-
+        case 'aspectRatio':
+          return node.setAspectRatio(value)
         default:
           return (node[`set${capitalize(name)}` as keyof YogaNode] as any)(scaledValue)
+      }
+    } else if (typeof value === 'function') {
+      switch (name) {
+        case 'measureFunc':
+          return node.setMeasureFunc(value)
       }
     }
   })
 }
 
-export const vectorFromObject = ({ x, y, z }: { x: number; y: number; z: number }) => new Vector3(x, y, z)
-
 export type Axis = 'x' | 'y' | 'z'
 export const axes: Axis[] = ['x', 'y', 'z']
+
+export function getAxis(searchAxis: Axis, axes: Array<Axis>, values: Array<number>) {
+  const index = axes.findIndex((axis) => axis === searchAxis)
+  if (index == -1) {
+    throw new Error(`unable to find axis "${searchAxis}" in [${axes.join(', ')}] `)
+  }
+  return values[index]
+}
 
 export function getDepthAxis(plane: FlexPlane) {
   switch (plane) {
@@ -137,38 +157,26 @@ export const rmUndefFromObj = (obj: Record<string, any>) =>
  *
  * NB: This doesn't work when object itself is rotated (well, for now)
  */
-export const getOBBSize = (object: Object3D, root: Object3D, bb: Box3, size: Vector3) => {
-  object.updateMatrix()
-  const oldMatrix = object.matrix
-  const oldMatrixAutoUpdate = object.matrixAutoUpdate
+export const getOBBSize = (object: Object3D, root: Object3D | null, bb: Box3, size: Vector3) => {
+  if (root == null) {
+    bb.setFromObject(object).getSize(size)
+  } else {
+    object.updateMatrix()
+    const oldMatrix = object.matrix
+    const oldMatrixAutoUpdate = object.matrixAutoUpdate
 
-  root.updateMatrixWorld()
-  const m = new Matrix4().copy(root.matrixWorld).invert()
-  object.matrix = m
-  // to prevent matrix being reassigned
-  object.matrixAutoUpdate = false
-  root.updateMatrixWorld()
+    root.updateMatrixWorld()
+    const m = new Matrix4().copy(root.matrixWorld).invert()
+    //this also inverts all transformations by "object"
+    object.matrix = m
+    // to prevent matrix being reassigned
+    object.matrixAutoUpdate = false
+    root.updateMatrixWorld()
 
-  bb.setFromObject(object).getSize(size)
+    bb.setFromObject(object).getSize(size)
 
-  object.matrix = oldMatrix
-  object.matrixAutoUpdate = oldMatrixAutoUpdate
-  root.updateMatrixWorld()
-}
-
-const getIsTopLevelChild = (node: YogaNode) => !node.getParent()?.getParent()
-
-/** @returns [mainAxisShift, crossAxisShift] */
-export const getRootShift = (
-  rootCenterAnchor: boolean | undefined,
-  rootWidth: number,
-  rootHeight: number,
-  node: YogaNode
-) => {
-  if (!rootCenterAnchor || !getIsTopLevelChild(node)) {
-    return [0, 0]
+    object.matrix = oldMatrix
+    object.matrixAutoUpdate = oldMatrixAutoUpdate
+    root.updateMatrixWorld()
   }
-  const mainAxisShift = -rootWidth / 2
-  const crossAxisShift = -rootHeight / 2
-  return [mainAxisShift, crossAxisShift] as const
 }

@@ -1,23 +1,26 @@
 import React from 'react'
 import { ComponentStory, ComponentMeta } from '@storybook/react'
+import { a } from '@react-spring/three'
 
-import { Flex, Box } from '../../src'
+import { Flex, Box, SpringBox } from '../../src'
 import { Setup } from '../Setup'
 
 const List = ({ width, height }: { width: number; height: number }) => {
   return (
-    <Flex position={[-width / 2, height / 2, -2]} size={[width, height, 0]} flexDirection="row" flexWrap="wrap">
-      {new Array(8).fill(undefined).map((_, i) => (
-        <Box margin={0.3} key={i} width={1.6} height={2} centerAnchor>
-          {(width, height) => (
-            <mesh>
-              <planeBufferGeometry args={[width, height]} />
-              <meshBasicMaterial color={0x0000ff} />
-            </mesh>
-          )}
-        </Box>
-      ))}
-    </Flex>
+    <group position={[-width / 2, height / 2, 0]}>
+      <Flex size={[width, height, 0]} flexDirection="row" flexWrap="wrap">
+        {new Array(8).fill(undefined).map((_, i) => (
+          <SpringBox margin={0.3} key={i} width={1.6} height={2} centerAnchor>
+            {(width, height) => (
+              <a.mesh scale-x={width} scale-y={height}>
+                <planeBufferGeometry args={[1, 1]} />
+                <meshBasicMaterial color={0x0000ff} />
+              </a.mesh>
+            )}
+          </SpringBox>
+        ))}
+      </Flex>
+    </group>
   )
 }
 

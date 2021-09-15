@@ -1,4 +1,13 @@
-import { YogaFlexDirection, YogaAlign, YogaJustifyContent, YogaFlexWrap, YogaDirection } from 'yoga-layout-prebuilt'
+import {
+  YogaFlexDirection,
+  YogaAlign,
+  YogaJustifyContent,
+  YogaFlexWrap,
+  YogaDirection,
+  YogaMeasureMode,
+} from 'yoga-layout-prebuilt'
+import { rmUndefFromObj } from './util'
+import { useMemo } from 'react'
 
 export type FlexYogaDirection = YogaDirection | 'ltr' | 'rtl'
 export type FlexPlane = 'xy' | 'yz' | 'xz'
@@ -117,4 +126,195 @@ export type R3FlexProps = Partial<{
   marginBottom: Value
   // Shorthand for marginBottom
   mb: Value
+
+  measureFunc: (
+    width: number,
+    widthMeasureMode: YogaMeasureMode,
+    height: number,
+    heightMeasureMode: YogaMeasureMode
+  ) => { width?: number; height?: number } | null
+
+  aspectRatio: number
 }>
+
+export function useProps<T>({
+  flexDirection,
+  flexDir,
+  dir,
+
+  alignContent,
+  alignItems,
+  alignSelf,
+  align,
+
+  justifyContent,
+  justify,
+
+  flexBasis,
+  basis,
+  flexGrow,
+  grow,
+
+  flexShrink,
+  shrink,
+
+  flexWrap,
+  wrap,
+
+  margin,
+  m,
+  marginBottom,
+  marginLeft,
+  marginRight,
+  marginTop,
+  mb,
+  ml,
+  mr,
+  mt,
+
+  padding,
+  p,
+  paddingBottom,
+  paddingLeft,
+  paddingRight,
+  paddingTop,
+  pb,
+  pl,
+  pr,
+  pt,
+
+  height,
+  width,
+
+  maxHeight,
+  maxWidth,
+  minHeight,
+  minWidth,
+
+  measureFunc,
+  aspectRatio,
+
+  // other
+  ...props
+}: R3FlexProps & T): [R3FlexProps, typeof props] {
+  return [
+    useMemo(() => {
+      const result = {
+        flexDirection,
+        flexDir,
+        dir,
+
+        alignContent,
+        alignItems,
+        alignSelf,
+        align,
+
+        justifyContent,
+        justify,
+
+        flexBasis,
+        basis,
+        flexGrow,
+        grow,
+
+        flexShrink,
+        shrink,
+
+        flexWrap,
+        wrap,
+
+        margin,
+        m,
+        marginBottom,
+        marginLeft,
+        marginRight,
+        marginTop,
+        mb,
+        ml,
+        mr,
+        mt,
+
+        padding,
+        p,
+        paddingBottom,
+        paddingLeft,
+        paddingRight,
+        paddingTop,
+        pb,
+        pl,
+        pr,
+        pt,
+
+        height,
+        width,
+
+        maxHeight,
+        maxWidth,
+        minHeight,
+        minWidth,
+
+        measureFunc,
+        aspectRatio,
+      }
+      rmUndefFromObj(result)
+      return result
+    }, [
+      flexDirection,
+      flexDir,
+      dir,
+
+      alignContent,
+      alignItems,
+      alignSelf,
+      align,
+
+      justifyContent,
+      justify,
+
+      flexBasis,
+      basis,
+      flexGrow,
+      grow,
+
+      flexShrink,
+      shrink,
+
+      flexWrap,
+      wrap,
+
+      margin,
+      m,
+      marginBottom,
+      marginLeft,
+      marginRight,
+      marginTop,
+      mb,
+      ml,
+      mr,
+      mt,
+
+      padding,
+      p,
+      paddingBottom,
+      paddingLeft,
+      paddingRight,
+      paddingTop,
+      pb,
+      pl,
+      pr,
+      pt,
+
+      height,
+      width,
+
+      maxHeight,
+      maxWidth,
+      minHeight,
+      minWidth,
+
+      measureFunc,
+      aspectRatio,
+    ]),
+    props,
+  ]
+}

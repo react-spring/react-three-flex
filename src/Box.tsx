@@ -1,247 +1,98 @@
-import React, { useLayoutEffect, useRef, useMemo, useState } from 'react'
-import * as THREE from 'three'
-import Yoga from 'yoga-layout-prebuilt'
-import { ReactThreeFiber, useFrame } from '@react-three/fiber'
+import React, { forwardRef, ReactNode, useCallback, useMemo, useState, useContext, createContext } from 'react'
 import mergeRefs from 'react-merge-refs'
+import { boxNodeContext } from './context'
+import { R3FlexProps, useProps } from './props'
 
-import { setYogaProperties, rmUndefFromObj } from './util'
-import { boxContext, flexContext, SharedBoxContext } from './context'
-import { R3FlexProps } from './props'
-import { useReflow, useContext } from './hooks'
-
-export type BoxProps = {
-  centerAnchor?: boolean
-  children: React.ReactNode | ((width: number, height: number, centerAnchor?: boolean) => React.ReactNode)
-} & R3FlexProps &
-  Omit<ReactThreeFiber.Object3DNode<THREE.Group, typeof THREE.Group>, 'children'>
-
-function BoxImpl(
-  {
-    // Non-flex props
-    children,
-    centerAnchor,
-
-    // flex props
-    flexDirection,
-    flexDir,
-    dir,
-
-    alignContent,
-    alignItems,
-    alignSelf,
-    align,
-
-    justifyContent,
-    justify,
-
-    flexBasis,
-    basis,
-    flexGrow,
-    grow,
-
-    flexShrink,
-    shrink,
-
-    flexWrap,
-    wrap,
-
-    margin,
-    m,
-    marginBottom,
-    marginLeft,
-    marginRight,
-    marginTop,
-    mb,
-    ml,
-    mr,
-    mt,
-
-    padding,
-    p,
-    paddingBottom,
-    paddingLeft,
-    paddingRight,
-    paddingTop,
-    pb,
-    pl,
-    pr,
-    pt,
-
-    height,
-    width,
-
-    maxHeight,
-    maxWidth,
-    minHeight,
-    minWidth,
-
-    // other
-    ...props
-  }: BoxProps,
-  ref: React.Ref<THREE.Group>
-) {
-  // must memoize or the object literal will cause every dependent of flexProps to rerender everytime
-  const flexProps: R3FlexProps = useMemo(() => {
-    const _flexProps = {
-      flexDirection,
-      flexDir,
-      dir,
-
-      alignContent,
-      alignItems,
-      alignSelf,
-      align,
-
-      justifyContent,
-      justify,
-
-      flexBasis,
-      basis,
-      flexGrow,
-      grow,
-      flexShrink,
-      shrink,
-
-      flexWrap,
-      wrap,
-
-      margin,
-      m,
-      marginBottom,
-      marginLeft,
-      marginRight,
-      marginTop,
-      mb,
-      ml,
-      mr,
-      mt,
-
-      padding,
-      p,
-      paddingBottom,
-      paddingLeft,
-      paddingRight,
-      paddingTop,
-      pb,
-      pl,
-      pr,
-      pt,
-
-      height,
-      width,
-
-      maxHeight,
-      maxWidth,
-      minHeight,
-      minWidth,
-    }
-
-    rmUndefFromObj(_flexProps)
-    return _flexProps
-  }, [
-    align,
-    alignContent,
-    alignItems,
-    alignSelf,
-    dir,
-    flexBasis,
-    basis,
-    flexDir,
-    flexDirection,
-    flexGrow,
-    grow,
-    flexShrink,
-    shrink,
-    flexWrap,
-    height,
-    justify,
-    justifyContent,
-    m,
-    margin,
-    marginBottom,
-    marginLeft,
-    marginRight,
-    marginTop,
-    maxHeight,
-    maxWidth,
-    mb,
-    minHeight,
-    minWidth,
-    ml,
-    mr,
-    mt,
-    p,
-    padding,
-    paddingBottom,
-    paddingLeft,
-    paddingRight,
-    paddingTop,
-    pb,
-    pl,
-    pr,
-    pt,
-    width,
-    wrap,
-  ])
-
-  const { registerBox, unregisterBox, scaleFactor } = useContext(flexContext)
-  const { node: parent } = useContext(boxContext)
-  const group = useRef<THREE.Group>()
-  const node = useMemo(() => Yoga.Node.create(), [])
-  const reflow = useReflow()
-
-  useLayoutEffect(() => {
-    setYogaProperties(node, flexProps, scaleFactor)
-  }, [flexProps, node, scaleFactor])
-
-  // Make child known to the parents yoga instance *before* it calculates layout
-  useLayoutEffect(() => {
-    if (!group.current || !parent) return
-
-    parent.insertChild(node, parent.getChildCount())
-    registerBox(node, group.current, flexProps, centerAnchor)
-
-    // Remove child on unmount
-    return () => {
-      parent.removeChild(node)
-      unregisterBox(node)
-    }
-  }, [node, parent, flexProps, centerAnchor, registerBox, unregisterBox])
-
-  // We need to reflow if props change
-  useLayoutEffect(() => {
-    reflow()
-  }, [children, flexProps, reflow])
-
-  const [size, setSize] = useState<[number, number]>([0, 0])
-  const epsilon = 1 / scaleFactor
-  useFrame(() => {
-    const width =
-      (typeof flexProps.width === 'number' ? flexProps.width : null) || node.getComputedWidth().valueOf() / scaleFactor
-    const height =
-      (typeof flexProps.height === 'number' ? flexProps.height : null) ||
-      node.getComputedHeight().valueOf() / scaleFactor
-
-    if (Math.abs(width - size[0]) > epsilon || Math.abs(height - size[1]) > epsilon) {
-      setSize([width, height])
-    }
-  })
-
-  const sharedBoxContext = useMemo<SharedBoxContext>(() => ({ node, size, centerAnchor }), [node, size, centerAnchor])
-
-  return (
-    <group ref={mergeRefs([group, ref])} {...props}>
-      <boxContext.Provider value={sharedBoxContext}>
-        {typeof children === 'function' ? children(size[0], size[1], centerAnchor) : children}
-      </boxContext.Provider>
-    </group>
-  )
-}
+import { useBox, usePropsSyncSize } from '.'
+import { FrameValue } from '@react-spring/core'
+import type * as Fiber from '@react-three/fiber'
 
 /**
  * Box container for 3D Objects.
  * For containing Boxes use `<Flex />`.
  */
-export const Box = React.forwardRef<THREE.Group, BoxProps>(BoxImpl)
+export const Box = forwardRef<
+  ReactNode,
+  {
+    onUpdateTransformation?: (x: number, y: number, width: number, height: number) => void
+    centerAnchor?: boolean
+    children: ((width: number, height: number) => React.ReactNode) | React.ReactNode
+    index?: number
+  } & R3FlexProps &
+    Fiber.GroupProps
+>(
+  (
+    {
+      // Non-flex props
+      children,
+      centerAnchor,
+
+      onUpdateTransformation,
+      index,
+
+      // other
+      ...props
+    },
+    ref
+  ) => {
+    // must memoize or the object literal will cause every dependent of flexProps to rerender everytime
+    const [flexProps, groupProps] = useProps<Fiber.GroupProps>(props)
+
+    const [[x, y, width, height], setTransformation] = useState<[number, number, number, number]>([0, 0, 0, 0])
+
+    const node = useBox(
+      flexProps,
+      centerAnchor,
+      index,
+      useCallback(
+        (x: number, y: number, width: number, height: number) => {
+          onUpdateTransformation && onUpdateTransformation(x, y, width, height)
+          setTransformation([x, y, width, height])
+        },
+        [onUpdateTransformation]
+      )
+    )
+
+    const size = useMemoArray<[number, number]>([width, height])
+
+    return (
+      <group ref={ref} {...groupProps} position-x={x} position-y={y}>
+        <boxNodeContext.Provider value={node}>
+          <boxSizeContext.Provider value={size}>
+            {useMemo(
+              () => (typeof children === 'function' ? children(width, height) : children),
+              [width, height, children]
+            )}
+          </boxSizeContext.Provider>
+        </boxNodeContext.Provider>
+      </group>
+    )
+  }
+)
+
+export const AutomaticBox = forwardRef<
+  ReactNode,
+  {
+    onUpdateTransformation?: (x: number, y: number, width: number, height: number) => void
+    centerAnchor?: boolean
+    children: ((width: number, height: number) => React.ReactNode) | React.ReactNode
+    index?: number
+  } & R3FlexProps &
+    Fiber.GroupProps
+>((props, ref) => {
+  const [overwrittenProps, setRef] = usePropsSyncSize(props)
+  const mergedReds = useMemo(() => mergeRefs([ref, setRef]), [ref, setRef])
+  return <Box ref={mergedReds} {...overwrittenProps} />
+})
+
+export function useMemoArray<T extends Array<any>>(array: T): T {
+  return useMemo(() => array, [array])
+}
+
+export const boxSizeContext = createContext<[number | FrameValue<number>, number | FrameValue<number>]>(null as any)
+
+export function useFlexSize() {
+  return useContext(boxSizeContext)
+}
 
 Box.displayName = 'Box'
