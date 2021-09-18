@@ -1,8 +1,8 @@
 import React, { useLayoutEffect, useMemo, useCallback, PropsWithChildren, useRef } from 'react'
-import Yoga, { YogaNode } from 'yoga-layout-prebuilt'
 import * as THREE from 'three'
 import { useFrame, useThree, ReactThreeFiber } from '@react-three/fiber'
 import mergeRefs from 'react-merge-refs'
+import { YGNodeRef, CONSTANTS } from 'yoga-wasm-slim'
 
 import {
   setYogaProperties,
@@ -13,6 +13,8 @@ import {
   getFlex2DSize,
   getOBBSize,
   getRootShift,
+  useYogaAsync,
+  setPropertyString,
 } from './util'
 import { boxContext, flexContext, SharedFlexContext, SharedBoxContext } from './context'
 import type { R3FlexProps, FlexYogaDirection, FlexPlane } from './props'
@@ -37,7 +39,7 @@ export type FlexProps = PropsWithChildren<
     Omit<ReactThreeFiber.Object3DNode<THREE.Group, typeof THREE.Group>, 'children'>
 >
 interface BoxesItem {
-  node: YogaNode
+  node: YGNodeRef
   group: THREE.Group
   flexProps: R3FlexProps
   centerAnchor: boolean
@@ -223,7 +225,7 @@ function FlexImpl(
   // Keeps track of the yoga nodes of the children and the related wrapper groups
   const boxesRef = useRef<BoxesItem[]>([])
   const registerBox = useCallback(
-    (node: YogaNode, group: THREE.Group, flexProps: R3FlexProps, centerAnchor: boolean = false) => {
+    (node: YGNodeRef, group: THREE.Group, flexProps: R3FlexProps, centerAnchor: boolean = false) => {
       const i = boxesRef.current.findIndex((b) => b.node === node)
       if (i !== -1) {
         boxesRef.current.splice(i, 1)
@@ -232,17 +234,19 @@ function FlexImpl(
     },
     []
   )
-  const unregisterBox = useCallback((node: YogaNode) => {
+  const unregisterBox = useCallback((node: YGNodeRef) => {
     const i = boxesRef.current.findIndex((b) => b.node === node)
     if (i !== -1) {
       boxesRef.current.splice(i, 1)
     }
   }, [])
 
+  const yoga = useYogaAsync('./')
+
   // Reference to the yoga native node
-  const node = useMemo(() => Yoga.Node.create(), [])
+  const node = useMemo(() => yoga._YGNodeNew(), [])
   useLayoutEffect(() => {
-    setYogaProperties(node, flexProps, scaleFactor)
+    setYogaProperties(yoga, node, flexProps, scaleFactor)
   }, [node, flexProps, scaleFactor])
 
   // Mechanism for invalidating and recalculating layout
@@ -266,7 +270,11 @@ function FlexImpl(
   const depthAxis = getDepthAxis(plane)
   const [flexWidth, flexHeight] = getFlex2DSize(size, plane)
   const yogaDirection_ =
-    yogaDirection === 'ltr' ? Yoga.DIRECTION_LTR : yogaDirection === 'rtl' ? Yoga.DIRECTION_RTL : yogaDirection
+    yogaDirection === 'ltr'
+      ? CONSTANTS.DIRECTION_LTR
+      : yogaDirection === 'rtl'
+      ? CONSTANTS.DIRECTION_RTL
+      : yogaDirection
 
   // Shared context for flex and box
   const sharedFlexContext = useMemo<SharedFlexContext>(
@@ -288,14 +296,7 @@ function FlexImpl(
     if (!disableSizeRecalc) {
       // Recalc all the sizes
       boxesRef.current.forEach(({ group, node, flexProps }) => {
-        const scaledWidth = typeof flexProps.width === 'number' ? flexProps.width * scaleFactor : flexProps.width
-        const scaledHeight = typeof flexProps.height === 'number' ? flexProps.height * scaleFactor : flexProps.height
-
-        if (scaledWidth !== undefined && scaledHeight !== undefined) {
-          // Forced size, no need to calculate bounding box
-          node.setWidth(scaledWidth)
-          node.setHeight(scaledHeight)
-        } else if (node.getChildCount() === 0) {
+        if (yoga._YGNodeGetChildCount(node) === 0 || flexProps.width === undefined || flexProps.height === undefined) {
           // No size specified, calculate size
           if (rootGroup.current) {
             getOBBSize(group, rootGroup.current, boundingBox, vec)
@@ -304,17 +305,17 @@ function FlexImpl(
             boundingBox.setFromObject(group).getSize(vec)
           }
 
-          node.setWidth(scaledWidth || vec[mainAxis] * scaleFactor)
-          node.setHeight(scaledHeight || vec[crossAxis] * scaleFactor)
+          setPropertyString(yoga, node, 'Width', flexProps.width || vec[mainAxis], scaleFactor)
+          setPropertyString(yoga, node, 'Height', flexProps.height || vec[crossAxis], scaleFactor)
         }
       })
     }
 
     // Perform yoga layout calculation
-    node.calculateLayout(flexWidth * scaleFactor, flexHeight * scaleFactor, yogaDirection_)
+    yoga._YGNodeCalculateLayout(node, flexWidth * scaleFactor, flexHeight * scaleFactor, yogaDirection_)
 
-    const rootWidth = node.getComputedWidth()
-    const rootHeight = node.getComputedHeight()
+    const rootWidth = yoga._YGNodeLayoutGetWidth(node)
+    const rootHeight = yoga._YGNodeLayoutGetHeight(node)
 
     let minX = 0
     let maxX = 0
@@ -323,8 +324,11 @@ function FlexImpl(
 
     // Reposition after recalculation
     boxesRef.current.forEach(({ group, node, centerAnchor }) => {
-      const { left, top, width, height } = node.getComputedLayout()
-      const [mainAxisShift, crossAxisShift] = getRootShift(rootCenterAnchor, rootWidth, rootHeight, node)
+      const left = yoga._YGNodeLayoutGetLeft(node)
+      const top = yoga._YGNodeLayoutGetTop(node)
+      const width = yoga._YGNodeLayoutGetWidth(node)
+      const height = yoga._YGNodeLayoutGetHeight(node)
+      const [mainAxisShift, crossAxisShift] = getRootShift(rootCenterAnchor, rootWidth, rootHeight, yoga, node)
 
       const position = vectorFromObject({
         [mainAxis]: (mainAxisShift + left + (centerAnchor ? width / 2 : 0)) / scaleFactor,

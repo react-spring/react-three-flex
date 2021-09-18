@@ -1,23 +1,13 @@
-import { YogaFlexDirection, YogaAlign, YogaJustifyContent, YogaFlexWrap, YogaDirection } from 'yoga-layout-prebuilt'
-
-export type FlexYogaDirection = YogaDirection | 'ltr' | 'rtl'
+export type FlexYogaDirection = 'ltr' | 'rtl'
 export type FlexPlane = 'xy' | 'yz' | 'xz'
 
 export type Value = string | number
 
-export type FlexDirection = YogaFlexDirection | 'row' | 'column' | 'row-reverse' | 'column-reverse'
+export type FlexDirection = 'row' | 'column' | 'row-reverse' | 'column-reverse'
 
-export type JustifyContent =
-  | YogaJustifyContent
-  | 'center'
-  | 'flex-end'
-  | 'flex-start'
-  | 'space-between'
-  | 'space-evenly'
-  | 'space-around'
+export type JustifyContent = 'center' | 'flex-end' | 'flex-start' | 'space-between' | 'space-evenly' | 'space-around'
 
 export type Align =
-  | YogaAlign
   | 'auto'
   | 'baseline'
   | 'center'
@@ -27,7 +17,7 @@ export type Align =
   | 'space-between'
   | 'stretch'
 
-export type FlexWrap = YogaFlexWrap | 'no-wrap' | 'wrap' | 'wrap-reverse'
+export type FlexWrap = 'no-wrap' | 'wrap' | 'wrap-reverse'
 
 export type R3FlexProps = Partial<{
   // Align

@@ -1,13 +1,13 @@
 import { createContext } from 'react'
-import { YogaNode } from 'yoga-layout-prebuilt'
+import { YGNodeRef } from 'yoga-wasm-slim'
 import { Group } from 'three'
 import { R3FlexProps } from './props'
 
 export interface SharedFlexContext {
   scaleFactor: number
   requestReflow(): void
-  registerBox(node: YogaNode, group: Group, flexProps: R3FlexProps, centerAnchor?: boolean): void
-  unregisterBox(node: YogaNode): void
+  registerBox(node: YGNodeRef, group: Group, flexProps: R3FlexProps, centerAnchor?: boolean): void
+  unregisterBox(node: YGNodeRef): void
   notInitialized?: boolean
 }
 
@@ -28,7 +28,7 @@ const initialSharedFlexContext: SharedFlexContext = {
 export const flexContext = createContext<SharedFlexContext>(initialSharedFlexContext)
 
 export interface SharedBoxContext {
-  node: YogaNode | null
+  node: YGNodeRef | null
   size: [number, number]
   centerAnchor?: boolean
   notInitialized?: boolean

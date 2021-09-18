@@ -1,6 +1,7 @@
 import { useCallback, useContext as useContextImpl, useMemo } from 'react'
 import { Mesh, Vector3 } from 'three'
 import { flexContext, boxContext } from './context'
+import { setPropertyString, useYogaAsync } from './util'
 
 export function useContext<T extends { notInitialized?: boolean }>(context: React.Context<T>) {
   let result = useContextImpl(context)
@@ -39,14 +40,15 @@ export function useFlexNode() {
 export function useSetSize(): (width: number, height: number) => void {
   const { requestReflow, scaleFactor } = useContext(flexContext)
   const node = useFlexNode()
+  const yoga = useYogaAsync('./')
 
   const sync = useCallback(
     (width: number, height: number) => {
       if (node == null) {
         throw new Error('yoga node is null. sync size is impossible')
       }
-      node.setWidth(width * scaleFactor)
-      node.setHeight(height * scaleFactor)
+      setPropertyString(yoga, node, 'Width', width, scaleFactor)
+      setPropertyString(yoga, node, 'Height', height, scaleFactor)
       requestReflow()
     },
     [node, requestReflow]

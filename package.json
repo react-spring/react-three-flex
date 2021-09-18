@@ -58,7 +58,8 @@
     "build-storybook": "build-storybook"
   },
   "dependencies": {
-    "yoga-layout-prebuilt": "^1.9.6"
+    "react-promise-suspense": "^0.3.3",
+    "yoga-wasm-slim": "^0.0.6"
   },
   "devDependencies": {
     "@babel/core": "7.15.0",
@@ -105,6 +106,7 @@
     "rimraf": "^3.0.2",
     "rollup": "^2.26.10",
     "rollup-plugin-filesize": "^9.1.1",
+    "rollup-plugin-size-snapshot": "^0.12.0",
     "rollup-plugin-terser": "^7.0.2",
     "three": "^0.131.3",
     "ts-jest": "^27.0.4",

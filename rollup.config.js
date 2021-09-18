@@ -4,6 +4,7 @@ import resolve from '@rollup/plugin-node-resolve'
 import json from '@rollup/plugin-json'
 import { terser } from 'rollup-plugin-terser'
 import filesize from 'rollup-plugin-filesize'
+import { sizeSnapshot } from 'rollup-plugin-size-snapshot'
 
 const root = process.platform === 'win32' ? path.resolve('/') : '/'
 const external = (id) => !id.startsWith('.') && !id.startsWith(root)
@@ -32,7 +33,8 @@ export default [
       babel(getBabelOptions({ useESModules: true }, '>1%, not dead, not ie 11, not op_mini all')),
       resolve({ extensions }),
       terser(),
-      filesize()
+      filesize(),
+      sizeSnapshot(),
     ],
   },
   {
@@ -44,7 +46,8 @@ export default [
       babel(getBabelOptions({ useESModules: false })),
       resolve({ extensions }),
       terser(),
-      filesize()
+      filesize(),
+      sizeSnapshot(),
     ],
   },
 ]
